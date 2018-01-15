@@ -31,6 +31,13 @@ public class OauthResponse extends HashMap<String ,Object>{
         return r;
     }
 
+    public static OauthResponse error(OauthEnum code) {
+        OauthResponse r = new OauthResponse();
+        r.put("code", code.getKey());
+        r.put("msg", code.getValue());
+        return r;
+    }
+
     public static OauthResponse ok(String msg) {
         OauthResponse r = new OauthResponse();
         r.put("msg", msg);
@@ -45,6 +52,10 @@ public class OauthResponse extends HashMap<String ,Object>{
 
     public static OauthResponse ok() {
         return new OauthResponse();
+    }
+
+    public static Object ok(Object object) {
+        return object;
     }
 
     @Override

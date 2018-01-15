@@ -5,9 +5,17 @@ package com.paranoia.oauth.response;
  * @date 2018/1/14 15:01
  */
 public enum OauthEnum {
-    CESHI(1,"CE");
 
-
+    ACCESS_FAIL(10015,"公众号未授权第三方平台，请检查授权状态"),
+    REDIRECR_IS_NULL(10011,"redirect_uri不能为空"),
+    APPID_IS_NULL(10012,"appid不能为空"),
+    REDIRECR_NOT_REGIST(10003,"redirect_uri域名与后台配置不一致"),
+    SECRET_IS_NULL(10013,"secret不能为空"),
+    SECRET_IS_WRONG(10014,"secret错误"),
+    GRANT_TYPE_IS_WRONG(10016,"grant_type错误"),
+    CODE_LOSE_EFFICACY(10017,"code失效"),
+    CODE_IS_WRONG(10018,"code错误"),
+    ;
     //-------------------------------------------------------------
 
     OauthEnum(int key, String value) {
