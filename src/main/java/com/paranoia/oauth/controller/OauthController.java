@@ -6,6 +6,9 @@ import com.paranoia.oauth.response.OauthEnum;
 import com.paranoia.oauth.response.OauthResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * todo 参数顺序强制校验
@@ -30,8 +34,9 @@ public class OauthController {
 
     Logger logger = LoggerFactory.getLogger(OauthController.class);
 
-    private String CODE;
 
+    @Autowired
+    RedisTemplate redisTemplate;
 
     /**
      * 验证appId和回调域名
@@ -44,6 +49,9 @@ public class OauthController {
     public OauthResponse oauthUser(@RequestParam("appid") String appId,
                                    @RequestParam("redirect_uri") String redirectUri,
                                    HttpServletResponse response) {
+
+        ValueOperations<String, String> operations = redisTemplate.opsForValue();
+
         //判断appid是否存在，若存在则校验回调域是否正确
         String sqlAppid = "123";
         String sqlUri = "localhost";
@@ -58,9 +66,12 @@ public class OauthController {
         if (0 != (int) oauthResponse.get("code")) {
             return oauthResponse;
         }
-        //TODO code 需要放到redis中，有效时间五分钟   appid-code
+        //FINISH code 需要放到redis中，有效时间五分钟   appid-code
         int code = UUID.randomUUID().toString().replaceAll("-", "").hashCode();
-        CODE = String.valueOf(code);
+        if (redisTemplate.hasKey(appId)){
+            redisTemplate.delete(appId);
+        }
+        operations.set(appId, String.valueOf(code), 5, TimeUnit.MINUTES);
         try {
             response.sendRedirect(redirectUri + "?code=" + String.valueOf(code));
         } catch (IOException e) {
@@ -80,10 +91,14 @@ public class OauthController {
                            @RequestParam("secret") String secret,
                            @RequestParam("code") String code,
                            @RequestParam("grant_type") String grantType) {
+
+        ValueOperations<String, String> operations = redisTemplate.opsForValue();
+
         Map<String, String> param = new HashMap<>();
         param.put("appId", appId);
         param.put("secret", secret);
         param.put("code", code);
+        param.put("redisCode", operations.get(appId));
         param.put("grantType", grantType);
         param.put("sqlAppid", "123");
         param.put("sqlSecret", "456");
@@ -137,12 +152,12 @@ public class OauthController {
         if (!"authorization_code".equals(param.get("grantType"))) {
             return OauthResponse.error(OauthEnum.GRANT_TYPE_IS_WRONG);
         }
-        //TODO redis中拿取上一步的code  鉴别是否过期
-        System.out.println("CODE = " + CODE);
-        if (StringUtils.isEmpty(CODE)) {
+        //FINISH redis中拿取上一步的code  鉴别是否过期
+        logger.info(String.format("redisCode = %s", param.get("redisCode")));
+        if (StringUtils.isEmpty(param.get("redisCode"))) {
             return OauthResponse.error(OauthEnum.CODE_LOSE_EFFICACY);
         }
-        if (!CODE.equals(param.get("code"))) {
+        if (!param.get("redisCode").equals(param.get("code"))) {
             return OauthResponse.error(OauthEnum.CODE_IS_WRONG);
         }
         return OauthResponse.ok();
