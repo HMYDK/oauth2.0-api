@@ -15,6 +15,13 @@ public enum OauthEnum {
     GRANT_TYPE_IS_WRONG(10016,"grant_type错误"),
     CODE_LOSE_EFFICACY(10017,"code失效"),
     CODE_IS_WRONG(10018,"code错误"),
+
+    THIRD_TOKEN_LOSE_EFFICACY(11001,"token失效，请通知客户端重新申请授权"),
+    THIRD_APP_NAME_IS_NULL(11002,"appName不能为空"),
+    THIRD_STATUS_FAIL(11003,"资源账户不存在或被禁用"),
+    THIRD_DONOT_HAS_AUTHORITY(11004,"该客户端没有任何API调用权限"),
+    THIRD_DONOT_HAS_THIS_AUTHORITY(11005,"该客户端没有该API调用权限"),
+
     ;
     //-------------------------------------------------------------
 

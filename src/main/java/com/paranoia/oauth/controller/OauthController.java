@@ -1,23 +1,33 @@
 package com.paranoia.oauth.controller;
 
 import com.paranoia.annotation.SysLog;
+import com.paranoia.modules.designercase.controller.FastJsonUtil;
+import com.paranoia.modules.designercase.controller.Param;
+import com.paranoia.modules.designercase.controller.ResultBean;
+import com.paranoia.oauth.domain.OauthPlugIn;
+import com.paranoia.oauth.domain.OauthPlugInDetails;
+import com.paranoia.oauth.domain.OauthThird;
 import com.paranoia.oauth.entity.TokenEntity;
 import com.paranoia.oauth.response.OauthEnum;
 import com.paranoia.oauth.response.OauthResponse;
+import com.paranoia.oauth.service.OauthPlugInDetailsService;
+import com.paranoia.oauth.service.OauthPlugInService;
+import com.paranoia.oauth.service.OauthThirdService;
+import com.sun.org.apache.regexp.internal.RE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +44,18 @@ public class OauthController {
 
     Logger logger = LoggerFactory.getLogger(OauthController.class);
 
-
     @Autowired
     RedisTemplate redisTemplate;
+
+    @Autowired
+    OauthPlugInService oauthPlugInService;
+
+    @Autowired
+    OauthThirdService oauthThirdService;
+
+    @Autowired
+    OauthPlugInDetailsService oauthPlugInDetailsService;
+
 
     /**
      * 验证appId和回调域名
@@ -53,7 +72,7 @@ public class OauthController {
         ValueOperations<String, String> operations = redisTemplate.opsForValue();
 
         //判断appid是否存在，若存在则校验回调域是否正确
-        String sqlAppid = "123";
+        String sqlAppid = "e69618f8249b47b39b8e52415c0fc117";
         String sqlUri = "localhost";
         //拼装校验参数
         Map<String, String> param = new HashMap<>();
@@ -68,7 +87,7 @@ public class OauthController {
         }
         //FINISH code 需要放到redis中，有效时间五分钟   appid-code
         int code = UUID.randomUUID().toString().replaceAll("-", "").hashCode();
-        if (redisTemplate.hasKey(appId)){
+        if (redisTemplate.hasKey(appId)) {
             redisTemplate.delete(appId);
         }
         operations.set(appId, String.valueOf(code), 5, TimeUnit.MINUTES);
@@ -92,6 +111,8 @@ public class OauthController {
                            @RequestParam("code") String code,
                            @RequestParam("grant_type") String grantType) {
 
+        OauthPlugIn oauthPlugIn = oauthPlugInService.getByAppId(appId);
+
         ValueOperations<String, String> operations = redisTemplate.opsForValue();
 
         Map<String, String> param = new HashMap<>();
@@ -100,26 +121,63 @@ public class OauthController {
         param.put("code", code);
         param.put("redisCode", operations.get(appId));
         param.put("grantType", grantType);
-        param.put("sqlAppid", "123");
-        param.put("sqlSecret", "456");
+        if (ObjectUtils.isEmpty(oauthPlugIn)){
+            param.put("sqlAppid", "");
+            param.put("sqlSecret", "");
+        }else {
+            param.put("sqlAppid", oauthPlugIn.getAppId());
+            param.put("sqlSecret", oauthPlugIn.getAppSecret());
+        }
         OauthResponse oauthResponse = this.paramVerifyForGetToken(param);
         if (0 != (int) oauthResponse.get("code")) {
             return oauthResponse;
         }
-        /**
-         * TODO token从数据库查询
-         *          1：存在
-         *                 有效：直接返回
-         *                 过期：重新生成&替换数据库数据
-         *          2：不存在
-         *                  生成一个
-         */
+        if (redisTemplate.hasKey(appId + "token")) {
+            redisTemplate.delete(appId + "token");
+        }
         String token = UUID.randomUUID().toString().replaceAll("-", "");
-        TokenEntity tokenEntity = new TokenEntity(token, 3600);
+        operations.set(appId + "token", token, 30, TimeUnit.DAYS);
+        //todo  是否持久化用户token?
+        //TODO  提醒用户最好是29天重新授权一次
+        TokenEntity tokenEntity = new TokenEntity(token, 30);
         return OauthResponse.ok(tokenEntity);
     }
 
+    @SysLog("鉴权")
+    @RequestMapping(value = "/verifyToken", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    public OauthResponse verify(@RequestBody String jsonString) {
+        //todo 转化异常全局处理
+        Map<String,String> paramMap = FastJsonUtil.stringToCollect(jsonString);
 
+        logger.info("oauth接收到的志愿服务器验证token的参数：" + paramMap);
+
+        OauthResponse oauthResponse =  this.paramVerifyForToken(paramMap);
+        if (0 != (int) oauthResponse.get("code")) {
+            return oauthResponse;
+        }
+        OauthThird oauthThird = oauthThirdService.getThirdByNameAndStatus(paramMap.get("appName"),0);
+        if (ObjectUtils.isEmpty(oauthThird)){
+            return OauthResponse.error(OauthEnum.THIRD_STATUS_FAIL);
+        }
+        logger.info(oauthThird.toString());
+        List<String> methodList = oauthPlugInDetailsService.getDetailsByAppIdAndLogogram(paramMap.get("appId"), oauthThird.getUid(), 0);
+
+        if (methodList.isEmpty()){
+            return OauthResponse.error(OauthEnum.THIRD_DONOT_HAS_AUTHORITY);
+        }
+        if (!methodList.contains(paramMap.get("url"))){
+            return OauthResponse.error(OauthEnum.THIRD_DONOT_HAS_THIS_AUTHORITY);
+        }
+        logger.info(methodList.toString());
+        return OauthResponse.ok();
+    }
+
+
+    /**
+     * 授权参数校验
+     * @param param
+     * @return
+     */
     private OauthResponse paramVerify(Map<String, String> param) {
         if (StringUtils.isEmpty(param.get("appId"))) {
             return OauthResponse.error(OauthEnum.APPID_IS_NULL);
@@ -136,6 +194,11 @@ public class OauthController {
         return OauthResponse.ok();
     }
 
+    /**
+     * 认证参数校验
+     * @param param
+     * @return
+     */
     private OauthResponse paramVerifyForGetToken(Map<String, String> param) {
         if (StringUtils.isEmpty(param.get("appId"))) {
             return OauthResponse.error(OauthEnum.APPID_IS_NULL);
@@ -159,6 +222,26 @@ public class OauthController {
         }
         if (!param.get("redisCode").equals(param.get("code"))) {
             return OauthResponse.error(OauthEnum.CODE_IS_WRONG);
+        }
+        return OauthResponse.ok();
+    }
+
+    /**
+     * 鉴权参数校验
+     * @param param
+     * @return
+     */
+    private OauthResponse paramVerifyForToken(Map<String, String> param) {
+        String appId = param.get("appId");
+        if (StringUtils.isEmpty(appId)){
+            return OauthResponse.error(OauthEnum.APPID_IS_NULL);
+        }
+        // 如果持久化用户token，那么这里的逻辑需要修改
+        if (!redisTemplate.hasKey(appId+"token")){
+            return OauthResponse.error(OauthEnum.THIRD_TOKEN_LOSE_EFFICACY);
+        }
+        if (StringUtils.isEmpty(param.get("appName"))){
+            return OauthResponse.error(OauthEnum.THIRD_APP_NAME_IS_NULL);
         }
         return OauthResponse.ok();
     }
