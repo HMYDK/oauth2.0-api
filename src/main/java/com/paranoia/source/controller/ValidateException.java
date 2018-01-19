@@ -1,4 +1,4 @@
-package com.paranoia.modules.designercase.controller;
+package com.paranoia.source.controller;
 
 /**
  * @author PARANOIA_ZK

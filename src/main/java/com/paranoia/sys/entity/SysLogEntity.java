@@ -1,4 +1,4 @@
-package com.paranoia.modules.sys.entity;
+package com.paranoia.sys.entity;
 
 import java.io.Serializable;
 import java.util.Arrays;

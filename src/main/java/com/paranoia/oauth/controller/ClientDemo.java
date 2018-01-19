@@ -2,7 +2,7 @@ package com.paranoia.oauth.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.paranoia.modules.designercase.controller.Param;
+import com.paranoia.source.controller.Param;
 import com.paranoia.oauth.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

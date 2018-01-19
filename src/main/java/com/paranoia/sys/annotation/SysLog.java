@@ -1,4 +1,4 @@
-package com.paranoia.annotation;
+package com.paranoia.sys.annotation;
 
 import java.lang.annotation.*;
 

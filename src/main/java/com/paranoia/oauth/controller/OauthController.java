@@ -1,11 +1,8 @@
 package com.paranoia.oauth.controller;
 
 import com.paranoia.annotation.SysLog;
-import com.paranoia.modules.designercase.controller.FastJsonUtil;
-import com.paranoia.modules.designercase.controller.Param;
-import com.paranoia.modules.designercase.controller.ResultBean;
+import com.paranoia.source.controller.FastJsonUtil;
 import com.paranoia.oauth.domain.OauthPlugIn;
-import com.paranoia.oauth.domain.OauthPlugInDetails;
 import com.paranoia.oauth.domain.OauthThird;
 import com.paranoia.oauth.entity.TokenEntity;
 import com.paranoia.oauth.response.OauthEnum;
@@ -13,7 +10,6 @@ import com.paranoia.oauth.response.OauthResponse;
 import com.paranoia.oauth.service.OauthPlugInDetailsService;
 import com.paranoia.oauth.service.OauthPlugInService;
 import com.paranoia.oauth.service.OauthThirdService;
-import com.sun.org.apache.regexp.internal.RE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +19,6 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;

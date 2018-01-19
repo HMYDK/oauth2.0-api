@@ -1,4 +1,4 @@
-package com.paranoia.modules.designercase.controller;
+package com.paranoia.source.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;

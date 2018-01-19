@@ -1,9 +1,9 @@
-package com.paranoia.aspect;
+package com.paranoia.sys.aspect;
 
-import com.paranoia.annotation.SysLog;
 import com.paranoia.modules.sys.entity.SysLogEntity;
 import com.paranoia.oauth.util.HttpContextUtils;
 import com.paranoia.oauth.util.IPUtils;
+import com.paranoia.sys.annotation.SysLog;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -24,7 +24,7 @@ import java.util.Date;
 @Component
 public class SysLogAspect {
 
-    @Pointcut("@annotation(com.paranoia.annotation.SysLog)")
+    @Pointcut("@annotation(com.paranoia.sys.annotation.SysLog)")
     public void logPointCut() {
 
     }
