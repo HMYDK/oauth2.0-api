@@ -1,15 +1,15 @@
 package com.paranoia.oauth.controller;
 
-import com.paranoia.annotation.SysLog;
-import com.paranoia.source.controller.FastJsonUtil;
 import com.paranoia.oauth.domain.OauthPlugIn;
 import com.paranoia.oauth.domain.OauthThird;
 import com.paranoia.oauth.entity.TokenEntity;
 import com.paranoia.oauth.response.OauthEnum;
-import com.paranoia.oauth.response.OauthResponse;
 import com.paranoia.oauth.service.OauthPlugInDetailsService;
 import com.paranoia.oauth.service.OauthPlugInService;
 import com.paranoia.oauth.service.OauthThirdService;
+import com.paranoia.source.controller.FastJsonUtil;
+import com.paranoia.sys.annotation.SysLog;
+import com.paranoia.sys.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +60,9 @@ public class OauthController {
      */
     @SysLog("验证appId和回调域名")
     @GetMapping(value = "/authorize")
-    public OauthResponse oauthUser(@RequestParam("appid") String appId,
-                                   @RequestParam("redirect_uri") String redirectUri,
-                                   HttpServletResponse response) {
+    public Response oauthUser(@RequestParam("appid") String appId,
+                              @RequestParam("redirect_uri") String redirectUri,
+                              HttpServletResponse response) {
 
         ValueOperations<String, String> operations = redisTemplate.opsForValue();
 
@@ -76,7 +76,7 @@ public class OauthController {
         param.put("sqlAppid", sqlAppid);
         param.put("sqlUri", sqlUri);
         //参数校验，若参数有问题则将指定的参数校验码返回
-        OauthResponse oauthResponse = this.paramVerify(param);
+        Response oauthResponse = this.paramVerify(param);
         if (0 != (int) oauthResponse.get("code")) {
             return oauthResponse;
         }
@@ -91,7 +91,7 @@ public class OauthController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return OauthResponse.ok();
+        return Response.ok();
     }
 
     /**
@@ -123,7 +123,7 @@ public class OauthController {
             param.put("sqlAppid", oauthPlugIn.getAppId());
             param.put("sqlSecret", oauthPlugIn.getAppSecret());
         }
-        OauthResponse oauthResponse = this.paramVerifyForGetToken(param);
+        Response oauthResponse = this.paramVerifyForGetToken(param);
         if (0 != (int) oauthResponse.get("code")) {
             return oauthResponse;
         }
@@ -135,36 +135,36 @@ public class OauthController {
         //todo  是否持久化用户token?
         //TODO  提醒用户最好是29天重新授权一次
         TokenEntity tokenEntity = new TokenEntity(token, 30);
-        return OauthResponse.ok(tokenEntity);
+        return Response.ok(tokenEntity);
     }
 
     @SysLog("鉴权")
     @RequestMapping(value = "/verifyToken", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-    public OauthResponse verify(@RequestBody String jsonString) {
+    public Response verify(@RequestBody String jsonString) {
         //todo 转化异常全局处理
         Map<String,String> paramMap = FastJsonUtil.stringToCollect(jsonString);
 
         logger.info("oauth接收到的志愿服务器验证token的参数：" + paramMap);
 
-        OauthResponse oauthResponse =  this.paramVerifyForToken(paramMap);
+        Response oauthResponse =  this.paramVerifyForToken(paramMap);
         if (0 != (int) oauthResponse.get("code")) {
             return oauthResponse;
         }
         OauthThird oauthThird = oauthThirdService.getThirdByNameAndStatus(paramMap.get("appName"),0);
         if (ObjectUtils.isEmpty(oauthThird)){
-            return OauthResponse.error(OauthEnum.THIRD_STATUS_FAIL);
+            return Response.error(OauthEnum.THIRD_STATUS_FAIL);
         }
         logger.info(oauthThird.toString());
         List<String> methodList = oauthPlugInDetailsService.getDetailsByAppIdAndLogogram(paramMap.get("appId"), oauthThird.getUid(), 0);
 
         if (methodList.isEmpty()){
-            return OauthResponse.error(OauthEnum.THIRD_DONOT_HAS_AUTHORITY);
+            return Response.error(OauthEnum.THIRD_DONOT_HAS_AUTHORITY);
         }
         if (!methodList.contains(paramMap.get("url"))){
-            return OauthResponse.error(OauthEnum.THIRD_DONOT_HAS_THIS_AUTHORITY);
+            return Response.error(OauthEnum.THIRD_DONOT_HAS_THIS_AUTHORITY);
         }
         logger.info(methodList.toString());
-        return OauthResponse.ok();
+        return Response.ok();
     }
 
 
@@ -173,20 +173,20 @@ public class OauthController {
      * @param param
      * @return
      */
-    private OauthResponse paramVerify(Map<String, String> param) {
+    private Response paramVerify(Map<String, String> param) {
         if (StringUtils.isEmpty(param.get("appId"))) {
-            return OauthResponse.error(OauthEnum.APPID_IS_NULL);
+            return Response.error(OauthEnum.APPID_IS_NULL);
         }
         if (StringUtils.isEmpty(param.get("redirectUri"))) {
-            return OauthResponse.error(OauthEnum.REDIRECR_IS_NULL);
+            return Response.error(OauthEnum.REDIRECR_IS_NULL);
         }
         if (!param.get("sqlAppid").equals(param.get("appId"))) {
-            return OauthResponse.error(OauthEnum.ACCESS_FAIL);
+            return Response.error(OauthEnum.ACCESS_FAIL);
         }
         if (!param.get("redirectUri").contains(param.get("sqlUri"))) {
-            return OauthResponse.error(OauthEnum.REDIRECR_NOT_REGIST);
+            return Response.error(OauthEnum.REDIRECR_NOT_REGIST);
         }
-        return OauthResponse.ok();
+        return Response.ok();
     }
 
     /**
@@ -194,31 +194,31 @@ public class OauthController {
      * @param param
      * @return
      */
-    private OauthResponse paramVerifyForGetToken(Map<String, String> param) {
+    private Response paramVerifyForGetToken(Map<String, String> param) {
         if (StringUtils.isEmpty(param.get("appId"))) {
-            return OauthResponse.error(OauthEnum.APPID_IS_NULL);
+            return Response.error(OauthEnum.APPID_IS_NULL);
         }
         if (StringUtils.isEmpty(param.get("secret"))) {
-            return OauthResponse.error(OauthEnum.SECRET_IS_NULL);
+            return Response.error(OauthEnum.SECRET_IS_NULL);
         }
         if (!param.get("sqlAppid").equals(param.get("appId"))) {
-            return OauthResponse.error(OauthEnum.ACCESS_FAIL);
+            return Response.error(OauthEnum.ACCESS_FAIL);
         }
         if (!param.get("sqlSecret").equals(param.get("secret"))) {
-            return OauthResponse.error(OauthEnum.SECRET_IS_WRONG);
+            return Response.error(OauthEnum.SECRET_IS_WRONG);
         }
         if (!"authorization_code".equals(param.get("grantType"))) {
-            return OauthResponse.error(OauthEnum.GRANT_TYPE_IS_WRONG);
+            return Response.error(OauthEnum.GRANT_TYPE_IS_WRONG);
         }
         //FINISH redis中拿取上一步的code  鉴别是否过期
         logger.info(String.format("redisCode = %s", param.get("redisCode")));
         if (StringUtils.isEmpty(param.get("redisCode"))) {
-            return OauthResponse.error(OauthEnum.CODE_LOSE_EFFICACY);
+            return Response.error(OauthEnum.CODE_LOSE_EFFICACY);
         }
         if (!param.get("redisCode").equals(param.get("code"))) {
-            return OauthResponse.error(OauthEnum.CODE_IS_WRONG);
+            return Response.error(OauthEnum.CODE_IS_WRONG);
         }
-        return OauthResponse.ok();
+        return Response.ok();
     }
 
     /**
@@ -226,18 +226,18 @@ public class OauthController {
      * @param param
      * @return
      */
-    private OauthResponse paramVerifyForToken(Map<String, String> param) {
+    private Response paramVerifyForToken(Map<String, String> param) {
         String appId = param.get("appId");
         if (StringUtils.isEmpty(appId)){
-            return OauthResponse.error(OauthEnum.APPID_IS_NULL);
+            return Response.error(OauthEnum.APPID_IS_NULL);
         }
         // 如果持久化用户token，那么这里的逻辑需要修改
         if (!redisTemplate.hasKey(appId+"token")){
-            return OauthResponse.error(OauthEnum.THIRD_TOKEN_LOSE_EFFICACY);
+            return Response.error(OauthEnum.THIRD_TOKEN_LOSE_EFFICACY);
         }
         if (StringUtils.isEmpty(param.get("appName"))){
-            return OauthResponse.error(OauthEnum.THIRD_APP_NAME_IS_NULL);
+            return Response.error(OauthEnum.THIRD_APP_NAME_IS_NULL);
         }
-        return OauthResponse.ok();
+        return Response.ok();
     }
 }
