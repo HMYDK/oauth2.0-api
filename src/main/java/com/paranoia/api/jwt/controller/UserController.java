@@ -19,7 +19,6 @@ public class UserController {
 
     Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @PostMapping("/login")
     @RequestMapping(value = "/login",method = RequestMethod.POST,produces = "application/json;charset=UTF-8")
     @ResponseBody
     public Response login(@RequestBody String jsonString) {

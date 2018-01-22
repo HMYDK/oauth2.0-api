@@ -23,6 +23,7 @@ public class JwtUtil {
 
     /**
      * 加密
+     *
      * @param object
      * @param <T>
      * @return
@@ -36,7 +37,7 @@ public class JwtUtil {
             claims.put(PAYLOAD, jsonString);
             claims.put(EXP, System.currentTimeMillis() + EXPIRATION);
             return signer.sign(claims);
-        } catch(Exception e) {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -44,21 +45,22 @@ public class JwtUtil {
 
     /**
      * 解密
+     *
      * @param jwt
      * @param classT
      * @param <T>
      * @return
      */
-    public static<T> T unSign(String jwt, Class<T> classT) {
+    public static <T> T unSign(String jwt, Class<T> classT) {
         final JWTVerifier verifier = new JWTVerifier(SECRET);
         try {
-            final Map<String,Object> claims= verifier.verify(jwt);
+            final Map<String, Object> claims = verifier.verify(jwt);
             if (claims.containsKey(EXP) && claims.containsKey(PAYLOAD)) {
-                long exp = (Long)claims.get(EXP);
+                long exp = (Long) claims.get(EXP);
                 long currentTimeMillis = System.currentTimeMillis();
                 //判断权限是否超时
                 if (exp > currentTimeMillis) {
-                    String json = (String)claims.get(PAYLOAD);
+                    String json = (String) claims.get(PAYLOAD);
                     ObjectMapper objectMapper = new ObjectMapper();
                     return objectMapper.readValue(json, classT);
                 }
@@ -66,6 +68,30 @@ public class JwtUtil {
             return null;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * 验证签名是否超时
+     *
+     * @param jwt
+     * @return
+     */
+    public static boolean unSign(String jwt) {
+        final JWTVerifier verifier = new JWTVerifier(SECRET);
+        try {
+            final Map<String, Object> claims = verifier.verify(jwt);
+            if (claims.containsKey(EXP) && claims.containsKey(PAYLOAD)) {
+                long exp = (Long) claims.get(EXP);
+                long currentTimeMillis = System.currentTimeMillis();
+                //判断权限是否超时
+                if (exp > currentTimeMillis) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

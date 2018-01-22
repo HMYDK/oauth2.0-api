@@ -1,5 +1,6 @@
 package com.paranoia.sys.response;
 
+import com.paranoia.jwt.response.JwtEnum;
 import com.paranoia.oauth.response.OauthEnum;
 
 import java.util.HashMap;
@@ -33,7 +34,16 @@ public class Response extends HashMap<String ,Object>{
         return r;
     }
 
+    //todo  这里抽一个公共enum出来
+
     public static Response error(OauthEnum code) {
+        Response r = new Response();
+        r.put("code", code.getKey());
+        r.put("msg", code.getValue());
+        return r;
+    }
+
+    public static Response error(JwtEnum code) {
         Response r = new Response();
         r.put("code", code.getKey());
         r.put("msg", code.getValue());
