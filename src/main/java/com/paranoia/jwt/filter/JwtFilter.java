@@ -17,6 +17,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author PARANOIA_ZK
@@ -46,10 +47,14 @@ public class JwtFilter extends OncePerRequestFilter {
             //验证token是否过期,包含了验证jwt是否正确
             try {
                 TokenDTO tokenDTO = JwtUtil.unSign(token, TokenDTO.class);
+                List<String> methodsList = oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0);
                 if (ObjectUtils.isEmpty(tokenDTO)) {
                     RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
                     return;
-                } else if (oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0).lastIndexOf(result) <= 0) {
+                }else if (methodsList == null){
+                    RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TEAM_LOCKED));
+                    return;
+                } else if (methodsList.lastIndexOf(result) <= 0) {
                     RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.AUTH_REQUEST_ERROR));
                     return;
                 }

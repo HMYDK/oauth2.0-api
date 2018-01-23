@@ -20,8 +20,8 @@ public enum JwtEnum {
     /**
      * 其他
      */
-    AUTH_REQUEST_ERROR(14540, "没有该API调用权限");
-
+    AUTH_REQUEST_ERROR(14540, "该API调用权限被禁用或没有调用权限"),
+    TEAM_LOCKED(10019,"团队权限被禁用");
     //-------------------------------------------------------------
 
     JwtEnum(int key, String value) {
