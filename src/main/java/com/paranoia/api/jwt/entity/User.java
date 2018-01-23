@@ -6,40 +6,27 @@ package com.paranoia.api.jwt.entity;
  */
 public class User {
 
-    private long id;
-    private String username;
-    private String password;
+    private String app_id;
+    private String app_secret;
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+    public User(String app_id, String app_secret) {
+        this.app_id = app_id;
+        this.app_secret = app_secret;
     }
 
-    public long getId() {
-        return id;
+    public String getApp_id() {
+        return app_id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setApp_id(String app_id) {
+        this.app_id = app_id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getApp_secret() {
+        return app_secret;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
+    public void setApp_secret(String app_secret) {
+        this.app_secret = app_secret;
     }
 }
