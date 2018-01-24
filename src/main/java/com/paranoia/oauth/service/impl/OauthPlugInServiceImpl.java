@@ -5,6 +5,7 @@ import com.paranoia.oauth.domain.OauthPlugIn;
 import com.paranoia.oauth.service.OauthPlugInService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author PARANOIA_ZK
@@ -19,5 +20,13 @@ public class OauthPlugInServiceImpl implements OauthPlugInService{
     @Override
     public OauthPlugIn getByAppId(String appId) {
         return oauthPlugInMapper.findByAppIdAndStatus(appId,0);
+    }
+
+    @Override
+    public boolean findByAppIdAndAppSecretAndStatus(String appId, String appSecret, int status) {
+        if (ObjectUtils.isEmpty(oauthPlugInMapper.findByAppIdAndAppSecretAndStatus(appId,appSecret,status))){
+            return false;
+        }
+        return true;
     }
 }

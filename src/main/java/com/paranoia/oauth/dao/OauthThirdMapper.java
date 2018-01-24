@@ -10,4 +10,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface OauthThirdMapper extends JpaRepository<OauthThird, Long> {
 
     OauthThird findByLogogramAndStatus(String name, Integer status);
+    OauthThird findByUidAndStatus(String uid, Integer status);
 }

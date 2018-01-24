@@ -3,6 +3,7 @@ package com.paranoia.jwt.util;
 import com.auth0.jwt.JWTSigner;
 import com.auth0.jwt.JWTVerifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paranoia.jwt.config.JwtConfigByProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,13 +14,10 @@ import java.util.Map;
  */
 public class JwtUtil {
 
-    private static final String SECRET = "ASDF]dv]DVPdsvads";
-
     private static final String EXP = "exp";
 
     private static final String PAYLOAD = "payload";
 
-    private static final Long EXPIRATION = 30L * 24L * 3600L * 1000L;
 
     /**
      * 加密
@@ -28,14 +26,14 @@ public class JwtUtil {
      * @param <T>
      * @return
      */
-    public static <T> String sign(T object) {
+    public static <T> String sign(T object ,JwtConfigByProperties jwtConfigByProperties) {
         try {
-            final JWTSigner signer = new JWTSigner(SECRET);
+            final JWTSigner signer = new JWTSigner(jwtConfigByProperties.getSecret());
             final Map<String, Object> claims = new HashMap<String, Object>(16);
             ObjectMapper mapper = new ObjectMapper();
             String jsonString = mapper.writeValueAsString(object);
             claims.put(PAYLOAD, jsonString);
-            claims.put(EXP, System.currentTimeMillis() + EXPIRATION);
+            claims.put(EXP, System.currentTimeMillis() + jwtConfigByProperties.getExpiration());
             return signer.sign(claims);
         } catch (Exception e) {
             return null;
@@ -51,8 +49,8 @@ public class JwtUtil {
      * @param <T>
      * @return
      */
-    public static <T> T unSign(String jwt, Class<T> classT) {
-        final JWTVerifier verifier = new JWTVerifier(SECRET);
+    public static <T> T unSign(String jwt, Class<T> classT ,JwtConfigByProperties jwtConfigByProperties) {
+        final JWTVerifier verifier = new JWTVerifier(jwtConfigByProperties.getSecret());
         try {
             final Map<String, Object> claims = verifier.verify(jwt);
             if (claims.containsKey(EXP) && claims.containsKey(PAYLOAD)) {
@@ -77,8 +75,8 @@ public class JwtUtil {
      * @param jwt
      * @return
      */
-    public static boolean unSign(String jwt) {
-        final JWTVerifier verifier = new JWTVerifier(SECRET);
+    public static boolean unSign(String jwt,JwtConfigByProperties jwtConfigByProperties) {
+        final JWTVerifier verifier = new JWTVerifier(jwtConfigByProperties.getSecret());
         try {
             final Map<String, Object> claims = verifier.verify(jwt);
             if (claims.containsKey(EXP) && claims.containsKey(PAYLOAD)) {

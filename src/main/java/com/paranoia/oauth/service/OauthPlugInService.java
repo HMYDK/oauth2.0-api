@@ -8,4 +8,6 @@ import com.paranoia.oauth.domain.OauthPlugIn;
  */
 public interface OauthPlugInService {
     OauthPlugIn getByAppId(String appId);
+
+    boolean findByAppIdAndAppSecretAndStatus(String appId,String appSecret,int status);
 }

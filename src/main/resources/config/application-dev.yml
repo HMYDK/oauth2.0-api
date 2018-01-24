@@ -1,6 +1,16 @@
 logging:
   level:
     com.paranoia: debug
+
+
+jwt:
+  header: 'Authorization'
+  secret: ';dosfjSFAWSDsdf]V]d/v _! 245zdf][dg.bfwed['
+  expiration: 2592000000
+  ignore: '/user/login'
+  tokenHead: 'Bearer '
+
+
 spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource

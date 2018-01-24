@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 public class ApiApplication {
 
     @Bean
-    //@ConditionalOnProperty(prefix = RestProperties.REST_PREFIX, name = "auth-open", havingValue = "true", matchIfMissing = true)
     public JwtFilter jwtAuthenticationTokenFilter() {
         return new JwtFilter();
     }

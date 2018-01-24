@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface OauthPlugInMapper extends JpaRepository<OauthPlugIn,Long>{
     OauthPlugIn findByAppIdAndStatus(String appId,int status);
+    OauthPlugIn findByAppIdAndAppSecretAndStatus(String appId,String appSecret,int status);
 }

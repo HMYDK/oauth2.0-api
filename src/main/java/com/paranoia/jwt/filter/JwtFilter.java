@@ -1,5 +1,6 @@
 package com.paranoia.jwt.filter;
 
+import com.paranoia.jwt.config.JwtConfigByProperties;
 import com.paranoia.jwt.doman.TokenDTO;
 import com.paranoia.jwt.exception.JwtException;
 import com.paranoia.jwt.response.JwtEnum;
@@ -29,6 +30,9 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     OauthThirdApiService oauthThirdApiService;
 
+    @Autowired
+    JwtConfigByProperties jwtConfigByProperties;
+
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
 
@@ -36,22 +40,23 @@ public class JwtFilter extends OncePerRequestFilter {
         String result = requestUrl.substring(0, requestUrl.lastIndexOf("/"));
 
         //过滤指定的路由
-        if (httpServletRequest.getServletPath().contains("/user/login")) {
+        if (httpServletRequest.getServletPath().contains(jwtConfigByProperties.getIgnore())) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             return;
         }
-        final String requestHeader = httpServletRequest.getHeader("Authorization");
+        final String requestHeader = httpServletRequest.getHeader(jwtConfigByProperties.getHeader());
         String token = null;
-        if (requestHeader != null && requestHeader.startsWith("Bearer ")) {
+        if (requestHeader != null && requestHeader.startsWith(jwtConfigByProperties.getTokenHead())) {
             token = requestHeader.substring(7);
             //验证token是否过期,包含了验证jwt是否正确
             try {
-                TokenDTO tokenDTO = JwtUtil.unSign(token, TokenDTO.class);
-                List<String> methodsList = oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0);
+                TokenDTO tokenDTO = JwtUtil.unSign(token, TokenDTO.class, jwtConfigByProperties);
                 if (ObjectUtils.isEmpty(tokenDTO)) {
                     RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
                     return;
-                }else if (methodsList == null){
+                }
+                List<String> methodsList = oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0);
+                if (methodsList == null) {
                     RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TEAM_LOCKED));
                     return;
                 } else if (methodsList.lastIndexOf(result) <= 0) {
