@@ -21,3 +21,7 @@
 
 ## JWT(JSON WEB TOKEN)
  实现JWT做api安全签名，从数据层面实现API权限控制
+ 
+ 
+## 数据签名
+  对传输数据进行签名，保证传输安全（参考：http://ai.qq.com/doc/auth.shtml）

@@ -36,42 +36,45 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
 
-        String requestUrl = httpServletRequest.getServletPath();
-        String result = requestUrl.substring(0, requestUrl.lastIndexOf("/"));
+        boolean sign = false;
+        if (sign){
+            String requestUrl = httpServletRequest.getServletPath();
+            String result = requestUrl.substring(0, requestUrl.lastIndexOf("/"));
 
-        //过滤指定的路由
-        if (httpServletRequest.getServletPath().contains(jwtConfigByProperties.getIgnore())) {
-            filterChain.doFilter(httpServletRequest, httpServletResponse);
-            return;
-        }
-        final String requestHeader = httpServletRequest.getHeader(jwtConfigByProperties.getHeader());
-        String token = null;
-        if (requestHeader != null && requestHeader.startsWith(jwtConfigByProperties.getTokenHead())) {
-            token = requestHeader.substring(7);
-            //验证token是否过期,包含了验证jwt是否正确
-            try {
-                TokenDTO tokenDTO = JwtUtil.unSign(token, TokenDTO.class, jwtConfigByProperties);
-                if (ObjectUtils.isEmpty(tokenDTO)) {
+            //过滤指定的路由
+            if (httpServletRequest.getServletPath().contains(jwtConfigByProperties.getIgnore())) {
+                filterChain.doFilter(httpServletRequest, httpServletResponse);
+                return;
+            }
+            final String requestHeader = httpServletRequest.getHeader(jwtConfigByProperties.getHeader());
+            String token = null;
+            if (requestHeader != null && requestHeader.startsWith(jwtConfigByProperties.getTokenHead())) {
+                token = requestHeader.substring(7);
+                //验证token是否过期,包含了验证jwt是否正确
+                try {
+                    TokenDTO tokenDTO = JwtUtil.unSign(token, TokenDTO.class, jwtConfigByProperties);
+                    if (ObjectUtils.isEmpty(tokenDTO)) {
+                        RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
+                        return;
+                    }
+                    List<String> methodsList = oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0);
+                    if (methodsList == null) {
+                        RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TEAM_LOCKED));
+                        return;
+                    } else if (methodsList.lastIndexOf(result) <= 0) {
+                        RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.AUTH_REQUEST_ERROR));
+                        return;
+                    }
+                } catch (JwtException e) {
+                    //有异常就是token解析失败了
                     RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
                     return;
                 }
-                List<String> methodsList = oauthThirdApiService.findByIdAndStatus(tokenDTO.getAppId(), 0);
-                if (methodsList == null) {
-                    RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TEAM_LOCKED));
-                    return;
-                } else if (methodsList.lastIndexOf(result) <= 0) {
-                    RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.AUTH_REQUEST_ERROR));
-                    return;
-                }
-            } catch (JwtException e) {
-                //有异常就是token解析失败了
+            } else {
+                //header没有带Bearer字段
                 RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
                 return;
             }
-        } else {
-            //header没有带Bearer字段
-            RenderUtil.renderJson(httpServletResponse, Response.error(JwtEnum.TOKEN_ERROR));
-            return;
         }
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
