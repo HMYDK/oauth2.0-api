@@ -2,6 +2,7 @@ package com.paranoia.sys.response;
 
 import com.paranoia.jwt.response.JwtEnum;
 import com.paranoia.oauth.response.OauthEnum;
+import com.paranoia.signature.response.SignEnum;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,13 @@ public class Response extends HashMap<String ,Object>{
     }
 
     public static Response error(JwtEnum code) {
+        Response r = new Response();
+        r.put("code", code.getKey());
+        r.put("msg", code.getValue());
+        return r;
+    }
+
+    public static Response error(SignEnum code) {
         Response r = new Response();
         r.put("code", code.getKey());
         r.put("msg", code.getValue());

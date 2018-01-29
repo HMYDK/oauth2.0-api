@@ -2,12 +2,15 @@ package com.paranoia.signature.aspect;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.paranoia.signature.response.SignEnum;
 import com.paranoia.signature.util.MD5Util;
 import com.paranoia.sys.response.Response;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -23,6 +26,8 @@ import java.util.*;
 @Component
 public class SignAspect {
 
+    Logger logger = LoggerFactory.getLogger(SignAspect.class);
+
     @Pointcut("execution(* com.paranoia.signature.controller..*(..))")
     public void signPointCut() {}
 
@@ -31,9 +36,10 @@ public class SignAspect {
     public Object around(ProceedingJoinPoint point) throws Throwable {
 
         Object[] args = point.getArgs();
-        System.out.println("args = " + this.toString(args));
-        if (!validateSign(this.toString(args))) {
-            return Response.error("验签失败");
+        logger.info(String.format("args = %s", this.toString(args)));
+        Response response = validateSign(this.toString(args));
+        if (0 != (int)response.get("code") ){
+            return response;
         }
         Object result = point.proceed();
         return result;
@@ -69,17 +75,28 @@ public class SignAspect {
      * @param jsonString
      * @return
      */
-    private boolean validateSign(String jsonString) {
+    private Response validateSign(String jsonString) {
         JSONObject jsonObject = JSON.parseObject(jsonString);
         System.out.println("jsonObject = " + jsonObject);
+        //校验时间，有效期五分钟
+        String clientTime = (String) jsonObject.get("time_stamp");
+        if (StringUtils.isEmpty(clientTime)){
+            return Response.error(SignEnum.TIEM_IS_NULL);
+        }
+        Date date = new Date(Long.valueOf(clientTime));
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.MINUTE,calendar.get(Calendar.MINUTE)+5);
+        if (System.currentTimeMillis() > calendar.getTimeInMillis()){
+            return Response.error(SignEnum.SIGN_IS_OUT_TIME);
+        }
         Map<String, Object> innerMap = jsonObject.getInnerMap();
-        //拿出sign
+        //校验sign
         String sign = (String) innerMap.get("sign");
         if (StringUtils.isEmpty(sign)) {
-            return false;
+            return Response.error(SignEnum.SIGN_IS_NULL);
         }
         innerMap.remove("sign");
-        System.out.println("sign = " + sign);
         Collection<String> keySet = innerMap.keySet();
         List<String> list = new ArrayList<>(keySet);
         Collections.sort(list);
@@ -92,13 +109,11 @@ public class SignAspect {
             e.printStackTrace();
         }
         sb.append("app_key=10086");
-        System.out.println("sb = " + sb);
         String weSign = MD5Util.MD5(sb.toString());
-        System.out.println("weSign = " + weSign);
-        if (sign.equals(weSign)) {
-            return true;
+        if (!sign.equals(weSign)) {
+            return Response.error(SignEnum.SIGN_IS_WRONG);
         }
-        return false;
+        return Response.ok();
     }
 
 
