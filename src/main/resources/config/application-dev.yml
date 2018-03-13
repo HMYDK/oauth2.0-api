@@ -17,7 +17,7 @@ spring:
     driverClassName: com.mysql.jdbc.Driver
     url: jdbc:mysql://192.168.14.175:3307/wechat_db?useUnicode=true&characterEncoding=utf8
     username: root
-    password: shejiin175
+    password: shuaige175
     initialSize: 1
     minIdle: 3
     maxActive: 20
